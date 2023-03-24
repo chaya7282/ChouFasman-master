@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-
+import numpy as np
 # Summary:
 #   An implementation of the Chou-Fasman algorithm
 # Authors:
@@ -9,9 +9,10 @@
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
-
+import xlsxwriter
 import string
 import sys
+import pandas as pd
 
 protein1 = 'MKIDAIVGRNSAKDIRTEERARVQLGNVVTAAALHGGIRISDQTTNSVETVVGKGESRVLIGNEYGGKGFWDNHHHHHH'
 protein2 = 'MRRYEVNIVLNPNLDQSQLALEKEIIQRALENYGARVEKVAILGLRRLAYPIAKDPQGYFLWYQVEMPEDRVNDLARELRIRDNVRRVMVVKSQEPFLANA'
@@ -84,7 +85,8 @@ def CF_find_alpha(seq):
         for i in range(start, start+6):
             if Pa[seq[i]] > 100:
                 numgood = numgood + 1
-        if (numgood >= 4):
+        p_a= float(sum([Pb[x] for x in seq[start:start+4]])) / float(4)
+        if (p_a >=100):
             [estart,end] = CF_extend_alpha(seq, start, start+6)
             #print "Exploring potential alpha " + str(estart) + ":" + str(end)
             #if (CF_good_alpha(seq[estart:end])):
@@ -133,8 +135,8 @@ def CF_find_beta(seq):
         for i in range(start, start+5):
             if (Pb[seq[i]] > 100):
                 numgood = numgood + 1
-
-        if (numgood >= 3):
+        p_b=  sum([Pb[x] for x in seq[start:start+4]]) / 4
+        if (p_b >= 100):
             [estart,end] = CF_extend_beta(seq, start, start+5)
             #print "Exploring potential alpha " + str(estart) + ":" + str(end)
             #if (CF_good_alpha(seq[estart:end])):
@@ -174,6 +176,7 @@ def CF_find_turns(seq):
         p_alpha= sum([Pa[x] for x in seq[i:i+4]])/4
         p_beta = sum([Pb[x] for x in seq[i:i + 4]] )/ 4
         p_turn=  sum([Pturn[x] for x in seq[i:i+4]])/4
+        c1 = F0[seq[i]] * F1[seq[i + 1]] * F2[seq[i + 2]] * F3[seq[i + 3]]
         c3 = sum([Pturn[x] for x in seq[i:i+4]]) > max(sum([Pa[x] for x in seq[i:i+4]]),sum([Pb[x] for x in seq[i:i+4]]))
         if c1 and c2 and c3:
             result.append(i)
@@ -216,6 +219,20 @@ def region_difference(region_a, region_b):
     # region_a is included in region_b
     else:
         return []
+
+def get_statistics(seq):
+    table=[]
+    start=0
+    while (start + 3 < len(seq)):
+        p_alpha = sum([Pa[x] for x in seq[start:start+4]]) / float(4)
+        p_beta = sum([Pb[x] for x in seq[start:start+4]]) / float(4)
+        p_turn = sum([Pturn[x] for x in seq[start:start+4]]) / float(4)
+        c1 = F0[seq[start]] * F1[seq[start + 1]] * F2[seq[start + 2]] * F3[seq[start + 3]]
+
+        table.append([seq[start],str(p_alpha),str(p_beta), str(p_turn) ,str(c1)])
+        start = start + 1
+    return table
+
 
 def ChouFasman(seq):
     """Analyze seq using the Chou-Fasman algorithm and display
@@ -298,11 +315,13 @@ def ChouFasman(seq):
     print ('final betas: '+str(betas))
     # Build a sequence of spaces of the same length as seq. 
     analysis = ['C' for i in range(len(seq))]
-
+    row=[7]
     # Fill in the predicted alpha helices
     for alpha in alphas:
         for i in range(alpha[0], alpha[1]):
             analysis[i] = 'A'
+
+            i=7
     # Fill in the predicted beta strands 
     for beta in betas:
         for i in range(beta[0], beta[1]):
@@ -311,41 +330,37 @@ def ChouFasman(seq):
     for turn in turns:
         analysis[turn] = 'T'
 
+
+
+
     # Turn the analysis and the sequence into strings for ease
     # of printing
     astr = "".join(analysis)
     return astr
 
 
+def analyze()
+    output_sequences= []
+    writer = pd.ExcelWriter(sys.argv[3], engine='xlsxwriter')
 
-output_sequences= []
-for seq_record in SeqIO.parse(sys.argv[1], "fasta"):
-    seq = seq_record.seq
+    for seq_record in SeqIO.parse(sys.argv[1], "fasta"):
+        seq = seq_record.seq
 
-    secondary_structure= ChouFasman(seq)
-    record = SeqRecord(
-        Seq(secondary_structure),
-        id=seq_record.id,
-        name=seq_record.name,
-        description=seq_record.description,
-    )
-    output_sequences.append(record)
+        secondary_structure= ChouFasman(seq)
+        table_statistics= get_statistics(seq)
+        df = pd.DataFrame(table_statistics,columns=['amino-acid','p_a','p_b','p_t','c1'])
+        df.to_excel(writer ,sheet_name=str(seq_record.name))
 
-SeqIO.write(output_sequences,sys.argv[2], "fasta")
+        record = SeqRecord(
+            Seq(secondary_structure),
+            id=seq_record.id,
+            name=seq_record.name,
+            description=seq_record.description,
+        )
+        output_sequences.append(record)
 
-if len(sys.argv) != 2:
-    print ('Usage: %s [protein1, protein2, protein3]' %sys.argv[0])
-elif sys.argv[1] == '-h' or sys.argv[1] == '--help':
-    print ('Usage: %s [protein1, protein2, protein3]' %sys.argv[0])
-elif sys.argv[1] == 'protein1':
-    seq = protein1
-    ChouFasman(seq)
-elif sys.argv[1] == 'protein2':
-    seq = protein2
-    ChouFasman(seq)
-elif sys.argv[1] == 'protein3':
-    seq = protein3
-    ChouFasman(seq)
-else:
-    print('Usage: %s [protein1, protein2, protein3]' %sys.argv[0])
+    writer.close()
+    SeqIO.write(output_sequences,sys.argv[2], "fasta")
+
+
 
