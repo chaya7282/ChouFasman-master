@@ -26,26 +26,26 @@ protein3 = 'MVGLTTLFWLGAIGMLVGTLAFAWAGRDAGSGERRYYVTLVGISGIAAVAYVVMALGVGWVPVAERTV
 #     http://prowl.rockefeller.edu/aainfo/chou.htm
 # Columns are          SYM,P(a), P(b),P(turn), f(i),   f(i+1), f(i+2), f(i+3)
 CF = {}
-
-CF['Alanine']       = ['A', 142,   83,   66,   0.06,   0.076,  0.035,  0.058]
-CF['Arginine']      = ['R',  100,  94, 95,   0.070,  0.106,  0.099,  0.085]
-CF['Aspartic Acid'] = ['N', 101,   54,  146,   0.147,  0.110,  0.179,  0.081]
-CF['Asparagine']    = ['D',  67,   89,  156,   0.161,  0.083,  0.191,  0.091]
-CF['Cysteine']      = ['C',  70,  119,  119,   0.149,  0.050,  0.117,  0.128]
-CF['Glutamic Acid'] = ['E', 151,   37,   74,   0.056,  0.060,  0.077,  0.064]
-CF['Glutamine']     = ['Q', 111,  110,   98,   0.074,  0.098,  0.037,  0.098]
-CF['Glycine']       = ['G', 64,   87, 156,   0.102,  0.085,  0.190,  0.152]
-CF['Histidine']     = ['H', 100,   87,   95,   0.140,  0.047,  0.093,  0.054]
-CF['Isoleucine']    = ['I', 108,  160,   47,   0.043,  0.034,  0.013,  0.056]
-CF['Leucine']       = ['L', 121,  130,   59,   0.061,  0.025,  0.036,  0.070]
-CF['Lysine']        = ['K', 121,  73,   101,   0.055,  0.115,  0.072,  0.095]
 CF['Methionine']    = ['M', 132, 101,   60 ,   0.068,  0.082,  0.014,  0.055]
-CF['Phenylalanine'] = ['F', 113,  138,   60,   0.059,  0.041,  0.065,  0.065]
+CF['Lysine']        = ['K', 121,  73,   101,   0.055,  0.115,  0.072,  0.095]
+CF['Isoleucine']    = ['I', 99, 157,  47 ,   0.043,  0.034,  0.013,  0.056]
+CF['Asparagine']    = ['D', 106,  66, 146,   0.161,  0.083,  0.191,  0.091]
+CF['Alanine']       = ['A', 139,  79,  66,   0.06,   0.076,  0.035,  0.058]
+CF['Arginine']      = ['R',  100,  94, 95,   0.070,  0.106,  0.099,  0.085]
+CF['Aspartic Acid'] = ['N', 78,  66, 156,   0.147,  0.110,  0.179,  0.081]
+CF['Cysteine']      = ['C',  95, 107, 119,   0.149,  0.050,  0.117,  0.128]
+CF['Glutamic Acid'] = ['E', 144,  51,  74,   0.056,  0.060,  0.077,  0.064]
+CF['Glutamine']     = ['Q', 112, 100,  98,   0.074,  0.098,  0.037,  0.098]
+CF['Glycine']       = ['G', 64,   87, 156,   0.102,  0.085,  0.190,  0.152]
+CF['Histidine']     = ['H', 112,  83,  95,   0.140,  0.047,  0.093,  0.054]
+CF['Leucine']       = ['L', 130, 117,  59,   0.061,  0.025,  0.036,  0.070]
+CF['Phenylalanine'] = ['F', 111, 123,  60,   0.059,  0.041,  0.065,  0.065]
 CF['Proline']       = ['P',  55,  62, 152,   0.102,  0.301,  0.034,  0.068]
+
 CF['Serine']        = ['S',  72,  94,   143,  0.120,  0.139,  0.125,  0.106]
 CF['Threonine']     = ['T',  78, 133,  96,   0.086,  0.108,  0.065,  0.079]
-CF['Tryptophan']    = ['W', 108,  137,   96,   0.077,  0.013,  0.064,  0.167]
-CF['Tyrosine']      = ['Y',  69,  147,  114,   0.082,  0.065,  0.114,  0.125]
+CF['Tryptophan']    = ['W', 103, 124,  96,   0.077,  0.013,  0.064,  0.167]
+CF['Tyrosine']      = ['Y',  73, 131, 114,   0.082,  0.065,  0.114,  0.125]
 CF['Valine']        = ['V',  97, 164,  50,   0.062,  0.048,  0.028,  0.053]
 
 aa_names = ['Alanine', 'Arginine', 'Asparagine', 'Aspartic Acid',
@@ -226,13 +226,13 @@ def region_difference(region_a, region_b):
 def get_statistics(seq):
     table=[]
     start=0
-    while (start + 3 < len(seq)):
+    while (start + 4 < len(seq)):
+        vec= [Pa[x] for x in seq[start:start+4]]
         p_alpha = sum([Pa[x] for x in seq[start:start+4]]) / float(4)
         p_beta = sum([Pb[x] for x in seq[start:start+4]]) / float(4)
         p_turn = sum([Pturn[x] for x in seq[start:start+4]]) / float(4)
         c1 = F0[seq[start]] * F1[seq[start + 1]] * F2[seq[start + 2]] * F3[seq[start + 3]]
-
-        table.append([seq[start],str(Pa[start]),str(Pb[start]),str(Pturn[start]), str(p_alpha),str(p_beta), str(p_turn) ,str(c1)])
+        table.append([seq[start],str(Pa[seq[start]]),str(Pb[seq[start]]),str(Pturn[seq[start]]), str(p_alpha),str(p_beta), str(p_turn) ,str(c1)])
         start = start + 1
     return table
 
@@ -322,16 +322,16 @@ def ChouFasman(seq):
     # Fill in the predicted alpha helices
     for alpha in alphas:
         for i in range(alpha[0], alpha[1]):
-            analysis[i] = 'A'
+            analysis[i] = 'H'
 
             i=7
     # Fill in the predicted beta strands 
     for beta in betas:
         for i in range(beta[0], beta[1]):
-            analysis[i] = 'B'
+            analysis[i] = 'E'
     # Fill in the predicted beta turns
     for turn in turns:
-        analysis[turn] = 'T'
+        analysis[turn] = 'C'
 
 
 
