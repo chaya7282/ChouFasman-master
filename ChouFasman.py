@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 import numpy as np
+import random
+import numpy.random
 # Summary:
 #   An implementation of the Chou-Fasman algorithm
 # Authors:
@@ -13,6 +15,7 @@ import xlsxwriter
 import string
 import sys
 import pandas as pd
+from numpy.random import choice
 
 protein1 = 'MKIDAIVGRNSAKDIRTEERARVQLGNVVTAAALHGGIRISDQTTNSVETVVGKGESRVLIGNEYGGKGFWDNHHHHHH'
 protein2 = 'MRRYEVNIVLNPNLDQSQLALEKEIIQRALENYGARVEKVAILGLRRLAYPIAKDPQGYFLWYQVEMPEDRVNDLARELRIRDNVRRVMVVKSQEPFLANA'
@@ -229,7 +232,7 @@ def get_statistics(seq):
         p_turn = sum([Pturn[x] for x in seq[start:start+4]]) / float(4)
         c1 = F0[seq[start]] * F1[seq[start + 1]] * F2[seq[start + 2]] * F3[seq[start + 3]]
 
-        table.append([seq[start],str(p_alpha),str(p_beta), str(p_turn) ,str(c1)])
+        table.append([seq[start],str(Pa[start]),str(Pb[start]),str(Pturn[start]), str(p_alpha),str(p_beta), str(p_turn) ,str(c1)])
         start = start + 1
     return table
 
@@ -339,16 +342,20 @@ def ChouFasman(seq):
     return astr
 
 
-def analyze()
+def analyze(fasta_input,fasta_2Dstructure,statistic_file):
     output_sequences= []
-    writer = pd.ExcelWriter(sys.argv[3], engine='xlsxwriter')
+    writer = pd.ExcelWriter(statistic_file, engine='xlsxwriter')
 
-    for seq_record in SeqIO.parse(sys.argv[1], "fasta"):
+    for seq_record in SeqIO.parse(fasta_input, "fasta"):
+
         seq = seq_record.seq
 
         secondary_structure= ChouFasman(seq)
         table_statistics= get_statistics(seq)
-        df = pd.DataFrame(table_statistics,columns=['amino-acid','p_a','p_b','p_t','c1'])
+        for i in range(len(table_statistics)):
+            table_statistics[i].insert(1,secondary_structure[i])
+
+        df = pd.DataFrame(table_statistics,columns=['amino-acid','2D-structure','Pa',  'Pb',  'Pt',   '<Pa>' ,  '<Pb>' ,  '<Pt>', 'c1'])
         df.to_excel(writer ,sheet_name=str(seq_record.name))
 
         record = SeqRecord(
@@ -360,7 +367,31 @@ def analyze()
         output_sequences.append(record)
 
     writer.close()
-    SeqIO.write(output_sequences,sys.argv[2], "fasta")
+    SeqIO.write(output_sequences,fasta_2Dstructure, "fasta")
 
 
 
+
+
+seqRecords=[]
+
+'''Protein number to synthesize-n'''
+n=-1
+for i in range(0):
+    CF_array = np.vstack(CF.values())
+    aminos = CF_array[:,0]
+
+    probs= (CF_array[:,1]).astype(float)/sum(CF_array[:,1].astype(float))
+    probs[1:] = 0
+    draw = random.choices( population=aminos,weights=probs,k=20)
+    astr = "".join(draw)
+    record = SeqRecord(
+        Seq(astr),
+        id='Seq-'+str(i),
+        name='Seq-'+str(i),
+        description='Random sequence',
+    )
+    seqRecords.append(record)
+
+    SeqIO.write(seqRecords, sys.argv[1], "fasta")
+analyze(sys.argv[1],sys.argv[2],sys.argv[3])
